@@ -6,6 +6,7 @@ import (
 
 	"github.com/RevanAdr/zlen/internal/auth"
 	"github.com/RevanAdr/zlen/internal/config"
+	"github.com/RevanAdr/zlen/internal/httpx"
 )
 
 func main() {
@@ -17,5 +18,5 @@ func main() {
 
 	router := route.NewRouter()
 	log.Println("Server listening on :8000")
-	log.Fatal(http.ListenAndServe(":8000", router))
+	log.Fatal(http.ListenAndServe(":8000", httpx.Logging(router)))
 }
