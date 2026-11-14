@@ -6,19 +6,19 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
-type AuthRepository interface {
+type UserRepository interface {
 	List(ctx context.Context) ([]User, error)
 }
 
-type AuthRepositoryImpl struct {
+type UserRepositoryImpl struct {
 	Db *pgxpool.Pool
 }
 
-func NewAuthRepository(db *pgxpool.Pool) AuthRepository {
-	return &AuthRepositoryImpl{Db: db}
+func NewUserRepository(db *pgxpool.Pool) UserRepository {
+	return &UserRepositoryImpl{Db: db}
 }
 
-func (r *AuthRepositoryImpl) List(ctx context.Context) ([]User, error) {
+func (r *UserRepositoryImpl) List(ctx context.Context) ([]User, error) {
 	users := []User{}
 	tx, err := r.Db.Begin(ctx)
 	if err != nil {
@@ -32,11 +32,15 @@ func (r *AuthRepositoryImpl) List(ctx context.Context) ([]User, error) {
 	}
 
 	for results.Next() {
-		result := User{}
-		if err := results.Scan(result.Id, result.Name, result.Role); err != nil {
+		user := User{}
+		if err := results.Scan(&user.Id, &user.Name, &user.Role); err != nil {
 			return users, err
 		}
-		users = append(users, result)
+		users = append(users, user)
+	}
+
+	if comerr := tx.Commit(ctx); comerr != nil {
+		return users, comerr
 	}
 
 	return users, nil
