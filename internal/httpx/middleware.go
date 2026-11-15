@@ -1,14 +1,16 @@
 package httpx
 
 import (
-	"fmt"
+	"log"
 	"net/http"
+	"time"
 )
 
 func Logging(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		fmt.Println("before")
+		start := time.Now()
 		next.ServeHTTP(w, r)
-		fmt.Println("after")
+		duration := time.Since(start).Seconds()
+		log.Printf("Method : %s, Path : %s, Time : %f", r.Method, r.URL.Path, duration)
 	})
 }
