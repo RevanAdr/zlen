@@ -17,6 +17,7 @@ func NewUseRoute(handler UserHandler) UserRoute {
 func (r *UserRouteImpl) NewRouter() *http.ServeMux {
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET /api/v1/users", r.handler.List)
+	mux.HandleFunc("GET /api/v1/users/{id}", r.handler.Get)
 
 	return mux
 }

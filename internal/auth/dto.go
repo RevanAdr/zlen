@@ -32,6 +32,14 @@ func ToResponses(u []User) []UserResponse {
 	return results
 }
 
+func ToResponse(u User) UserResponse {
+	return UserResponse{
+		Id:   u.Id,
+		Name: u.Name,
+		Role: u.Role,
+	}
+}
+
 func WriteToJSON(w http.ResponseWriter, status int, str string, args any) {
 	encoder := json.NewEncoder(w)
 	w.Header().Set("Content-Type", "application/json")

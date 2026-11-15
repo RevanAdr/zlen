@@ -2,12 +2,15 @@ package auth
 
 import (
 	"context"
+	"errors"
 
+	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
 type UserRepository interface {
 	List(ctx context.Context) ([]User, error)
+	Get(ctx context.Context, id int) (User, error)
 }
 
 type UserRepositoryImpl struct {
@@ -17,6 +20,8 @@ type UserRepositoryImpl struct {
 func NewUserRepository(db *pgxpool.Pool) UserRepository {
 	return &UserRepositoryImpl{Db: db}
 }
+
+var ErrNotFound error = errors.New("User not found")
 
 func (r *UserRepositoryImpl) List(ctx context.Context) ([]User, error) {
 	users := []User{}
@@ -45,4 +50,27 @@ func (r *UserRepositoryImpl) List(ctx context.Context) ([]User, error) {
 
 	return users, nil
 
+}
+
+func (r *UserRepositoryImpl) Get(ctx context.Context, id int) (User, error) {
+	tx, err := r.Db.Begin(ctx)
+	result := User{}
+	if err != nil {
+		return result, err
+	}
+
+	qErr := tx.QueryRow(ctx, "SELECT * FROM users WHERE id = $1", id).Scan(&result.Id, &result.Name, &result.Role)
+	if errors.Is(pgx.ErrNoRows, qErr) {
+		return result, ErrNotFound
+	}
+
+	if qErr != nil {
+		return result, qErr
+	}
+
+	if comerr := tx.Commit(ctx); comerr != nil {
+		return result, comerr
+	}
+
+	return result, nil
 }
