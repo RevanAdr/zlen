@@ -11,6 +11,7 @@ import (
 type UserRepository interface {
 	List(ctx context.Context) ([]User, error)
 	Get(ctx context.Context, id int) (User, error)
+	Create(ctx context.Context, user User) (User, error)
 }
 
 type UserRepositoryImpl struct {
@@ -64,6 +65,25 @@ func (r *UserRepositoryImpl) Get(ctx context.Context, id int) (User, error) {
 		return result, ErrNotFound
 	}
 
+	if qErr != nil {
+		return result, qErr
+	}
+
+	if comerr := tx.Commit(ctx); comerr != nil {
+		return result, comerr
+	}
+
+	return result, nil
+}
+
+func (r *UserRepositoryImpl) Create(ctx context.Context, user User) (User, error) {
+	tx, err := r.Db.Begin(ctx)
+	result := User{}
+	if err != nil {
+		return result, err
+	}
+
+	qErr := tx.QueryRow(ctx, "INSERT INTO users (name, role) VALUES ($1, $2) RETURNING id", user.Name, user.Role).Scan(&result.Id, result.Name, result.Role)
 	if qErr != nil {
 		return result, qErr
 	}
