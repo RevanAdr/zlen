@@ -51,3 +51,12 @@ func WriteToJSON(w http.ResponseWriter, status int, str string, args any) {
 	}
 	encoder.Encode(response)
 }
+
+func ReadBody(r *http.Request, dst any) error {
+	dec := json.NewDecoder(r.Body)
+	err := dec.Decode(dst)
+	if err != nil {
+		return err
+	}
+	return nil
+}

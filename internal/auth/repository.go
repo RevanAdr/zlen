@@ -23,6 +23,7 @@ func NewUserRepository(db *pgxpool.Pool) UserRepository {
 }
 
 var ErrNotFound error = errors.New("User not found")
+var ReadError error = errors.New("Cannot read body")
 
 func (r *UserRepositoryImpl) List(ctx context.Context) ([]User, error) {
 	users := []User{}
@@ -83,7 +84,7 @@ func (r *UserRepositoryImpl) Create(ctx context.Context, user User) (User, error
 		return result, err
 	}
 
-	qErr := tx.QueryRow(ctx, "INSERT INTO users (name, role) VALUES ($1, $2) RETURNING id", user.Name, user.Role).Scan(&result.Id, result.Name, result.Role)
+	qErr := tx.QueryRow(ctx, "INSERT INTO users (name, role) VALUES ($1, $2) RETURNING id, name, role", user.Name, user.Role).Scan(&result.Id, &result.Name, &result.Role)
 	if qErr != nil {
 		return result, qErr
 	}

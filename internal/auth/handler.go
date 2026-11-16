@@ -9,6 +9,7 @@ import (
 type UserHandler interface {
 	List(w http.ResponseWriter, r *http.Request)
 	Get(w http.ResponseWriter, r *http.Request)
+	Create(w http.ResponseWriter, r *http.Request)
 }
 
 type UserHandlerImpl struct {
@@ -45,4 +46,24 @@ func (h *UserHandlerImpl) Get(w http.ResponseWriter, r *http.Request) {
 	default:
 		WriteToJSON(w, http.StatusOK, "OK", response)
 	}
+}
+
+func (h *UserHandlerImpl) Create(w http.ResponseWriter, r *http.Request) {
+	request := User{}
+	if rerr := ReadBody(r, &request); rerr != nil {
+		WriteToJSON(w, http.StatusInternalServerError, "Internal Server Error", map[string]string{"error": string(rerr.Error())})
+		return
+	}
+
+	data := User{
+		Name: request.Name,
+		Role: request.Role,
+	}
+	response, err := h.service.Create(r.Context(), data)
+	if err != nil {
+		WriteToJSON(w, http.StatusInternalServerError, "Internal Server Error", map[string]string{"error": string(err.Error())})
+		return
+	}
+
+	WriteToJSON(w, http.StatusCreated, "Created", response)
 }
