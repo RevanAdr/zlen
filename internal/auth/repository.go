@@ -12,6 +12,7 @@ type UserRepository interface {
 	List(ctx context.Context) ([]User, error)
 	Get(ctx context.Context, id int) (User, error)
 	Create(ctx context.Context, user User) (User, error)
+	Delete(ctx context.Context, id int) error
 }
 
 type UserRepositoryImpl struct {
@@ -86,6 +87,7 @@ func (r *UserRepositoryImpl) Create(ctx context.Context, user User) (User, error
 
 	qErr := tx.QueryRow(ctx, "INSERT INTO users (name, role) VALUES ($1, $2) RETURNING id, name, role", user.Name, user.Role).Scan(&result.Id, &result.Name, &result.Role)
 	if qErr != nil {
+		tx.Rollback(ctx)
 		return result, qErr
 	}
 
@@ -94,4 +96,23 @@ func (r *UserRepositoryImpl) Create(ctx context.Context, user User) (User, error
 	}
 
 	return result, nil
+}
+
+func (r *UserRepositoryImpl) Delete(ctx context.Context, id int) error {
+	tx, err := r.Db.Begin(ctx)
+	if err != nil {
+		return err
+	}
+
+	_, rErr := tx.Exec(ctx, "DELETE FROM users WHERE id = $1", id)
+	if rErr != nil {
+		tx.Rollback(ctx)
+		return rErr
+	}
+
+	if comerr := tx.Commit(ctx); comerr != nil {
+		tx.Rollback(ctx)
+		return comerr
+	}
+	return nil
 }

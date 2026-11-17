@@ -10,6 +10,7 @@ type UserHandler interface {
 	List(w http.ResponseWriter, r *http.Request)
 	Get(w http.ResponseWriter, r *http.Request)
 	Create(w http.ResponseWriter, r *http.Request)
+	Delete(w http.ResponseWriter, r *http.Request)
 }
 
 type UserHandlerImpl struct {
@@ -66,4 +67,24 @@ func (h *UserHandlerImpl) Create(w http.ResponseWriter, r *http.Request) {
 	}
 
 	WriteToJSON(w, http.StatusCreated, "Created", response)
+}
+
+func (h *UserHandlerImpl) Delete(w http.ResponseWriter, r *http.Request) {
+	id, err := strconv.Atoi(r.PathValue("id"))
+	if err != nil {
+		WriteToJSON(w, http.StatusBadRequest, "Bad Request", map[string]string{"error": err.Error()})
+		return
+	}
+
+	rErr := h.service.Delete(r.Context(), id)
+	switch {
+	case errors.Is(rErr, ErrNotFound):
+		WriteToJSON(w, http.StatusNotFound, "Not Found", map[string]string{"error": "user not found"})
+		return
+	case rErr != nil:
+		WriteToJSON(w, http.StatusInternalServerError, "Internal Server Error", map[string]string{"error": rErr.Error()})
+		return
+	default:
+		WriteToJSON(w, http.StatusOK, "OK", map[string]string{"messages": "Succed delete user"})
+	}
 }
