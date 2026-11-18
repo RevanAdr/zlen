@@ -1,9 +1,11 @@
 package httpx
 
 import (
-	"log"
+	"log/slog"
 	"net/http"
 	"time"
+
+	"os"
 )
 
 type statusRecorder struct {
@@ -22,6 +24,12 @@ func Logging(next http.Handler) http.Handler {
 		rw := &statusRecorder{ResponseWriter: w, status: http.StatusOK}
 		next.ServeHTTP(rw, r)
 		duration := time.Since(start).Seconds()
-		log.Printf("Method : %s, Path : %s, Time : %f, Code : %d", r.Method, r.URL.Path, duration, rw.status)
+		logger := slog.New(slog.NewJSONHandler(os.Stdout, nil))
+		logger.InfoContext(r.Context(), "request",
+			"Method", r.Method,
+			"Path", r.URL.Path,
+			"Code", rw.status,
+			"Duration", duration,
+		)
 	})
 }
