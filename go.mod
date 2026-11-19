@@ -3,6 +3,7 @@ module github.com/RevanAdr/zlen
 go 1.27.3
 
 require (
+	github.com/golang-jwt/jwt/v5 v5.3.1
 	github.com/jackc/pgx/v5 v5.13.0
 	github.com/joho/godotenv v1.5.1
 )

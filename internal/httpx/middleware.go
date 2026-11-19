@@ -1,21 +1,46 @@
 package httpx
 
 import (
+	"crypto/ecdsa"
 	"log/slog"
 	"net/http"
 	"time"
 
 	"os"
+
+	"github.com/golang-jwt/jwt/v5"
 )
+
+var key []byte = []byte(os.Getenv("KEY"))
 
 type statusRecorder struct {
 	http.ResponseWriter
 	status int
 }
 
+type UserClaims struct {
+	Role string `json:"role"`
+	jwt.RegisteredClaims
+}
+
+type Jwt struct {
+	key    *ecdsa.PrivateKey
+	token  *jwt.Token
+	string string
+}
+
 func (rw *statusRecorder) WriteHeader(code int) {
 	rw.status = code
 	rw.ResponseWriter.WriteHeader(code)
+}
+
+func MakeToken(userId string, secret []byte) (string, error) {
+	claims := jwt.RegisteredClaims{
+		Subject:   userId,
+		ExpiresAt: jwt.NewNumericDate(time.Now().Add(15 * time.Minute)),
+	}
+	token := jwt.NewWithClaims(jwt.SigningMethodES256, claims)
+	return token.SignedString(secret)
 }
 
 func Logging(next http.Handler) http.Handler {

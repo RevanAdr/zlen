@@ -3,3 +3,6 @@ run:
 
 db-up:
 	podman-compose up -d
+
+db-start:
+	podman-compose start
