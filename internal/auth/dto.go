@@ -17,10 +17,10 @@ type UserResponse struct {
 	Role string `json:"role"`
 }
 
-type WebResponse struct {
-	Code   int
-	Status string
-	Data   any
+type WebResponse[T any] struct {
+	Code   int    `json:"code"`
+	Status string `json:"status"`
+	Data   T      `json:"data"`
 }
 
 func ToResponses(u []User) []UserResponse {
@@ -44,7 +44,7 @@ func WriteToJSON(w http.ResponseWriter, status int, str string, args any) {
 	encoder := json.NewEncoder(w)
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(status)
-	response := WebResponse{
+	response := WebResponse[any]{
 		Code:   status,
 		Status: str,
 		Data:   args,
