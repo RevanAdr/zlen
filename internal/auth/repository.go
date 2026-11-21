@@ -13,6 +13,7 @@ type UserRepository interface {
 	Get(ctx context.Context, id int) (User, error)
 	Create(ctx context.Context, user UserRequest) (UserCreate, error)
 	Delete(ctx context.Context, id int) error
+	FindByEmail(ctx context.Context, email string) (LoginResponse, error)
 }
 
 type UserRepositoryImpl struct {
@@ -22,9 +23,6 @@ type UserRepositoryImpl struct {
 func NewUserRepository(db *pgxpool.Pool) UserRepository {
 	return &UserRepositoryImpl{Db: db}
 }
-
-var ErrNotFound error = errors.New("User not found")
-var ReadError error = errors.New("Cannot read body")
 
 func (r *UserRepositoryImpl) List(ctx context.Context) ([]User, error) {
 	users := []User{}
@@ -115,4 +113,27 @@ func (r *UserRepositoryImpl) Delete(ctx context.Context, id int) error {
 		return comerr
 	}
 	return nil
+}
+
+func (r *UserRepositoryImpl) FindByEmail(ctx context.Context, email string) (LoginResponse, error) {
+	result := LoginResponse{}
+	tx, err := r.Db.Begin(ctx)
+	if err != nil {
+		return LoginResponse{}, err
+	}
+
+	responseErr := tx.QueryRow(ctx, "SELECT name, email, password FROM users WHERE email = $1", email).Scan(&result.Name, &result.Email, &result.Password)
+	switch {
+	case errors.Is(responseErr, pgx.ErrNoRows):
+		return result, ErrNotFound
+	case responseErr != nil:
+		return result, responseErr
+	}
+
+	if cErr := tx.Commit(ctx); cErr != nil {
+		tx.Rollback(ctx)
+		return result, cErr
+	}
+
+	return result, nil
 }

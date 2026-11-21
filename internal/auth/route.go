@@ -20,6 +20,7 @@ func (r *UserRouteImpl) NewRouter() *http.ServeMux {
 	mux.HandleFunc("GET /api/v1/employees/{id}", r.handler.Get)
 	mux.HandleFunc("POST /api/v1/employees", r.handler.Create)
 	mux.HandleFunc("DELETE /api/v1/employees/{id}", r.handler.Delete)
+	mux.HandleFunc("POST /employees/login", r.handler.Login)
 
 	return mux
 }

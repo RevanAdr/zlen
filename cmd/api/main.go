@@ -23,6 +23,8 @@ func main() {
 	handler := auth.NewUserHandler(service)
 	route := auth.NewUseRoute(handler)
 
+	defer db.Close()
+
 	if env := godotenv.Load(".env"); env != nil {
 		panic(env)
 	}

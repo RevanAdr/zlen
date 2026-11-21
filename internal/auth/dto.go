@@ -39,10 +39,26 @@ type WebResponse[T any] struct {
 	Data   T      `json:"data"`
 }
 
+type LoginRequest struct {
+	Email    string `json:"email"`
+	Password string `json:"password"`
+}
+
+type LoginResponse struct {
+	Name     string
+	Email    string
+	Password string
+}
+
 type UserRequest struct {
 	Name     string `json:"name"`
 	Email    string `json:"email"`
 	Password string `json:"password"`
+}
+
+type UserDisplay struct {
+	Name  string `json:"name"`
+	Email string `json:"email"`
 }
 
 func ToResponses(u []User) []UserResponse {
@@ -98,4 +114,12 @@ func HashPassword(password string) (string, error) {
 		return "could not hash password", err
 	}
 	return string(hash), nil
+}
+
+func MatchPassword(password string, hashed string) error {
+	err := bcrypt.CompareHashAndPassword([]byte(hashed), []byte(password))
+	if err != nil {
+		return PasswordNotMatched
+	}
+	return nil
 }

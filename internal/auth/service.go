@@ -7,6 +7,7 @@ type UserService interface {
 	Get(ctx context.Context, id int) (UserResponse, error)
 	Create(ctx context.Context, user UserRequest) (UserCreateResponse, error)
 	Delete(ctx context.Context, id int) error
+	FindByEmail(ctx context.Context, email string) (LoginResponse, error)
 }
 
 type UserServiceImpl struct {
@@ -51,4 +52,12 @@ func (s *UserServiceImpl) Delete(ctx context.Context, id int) error {
 		return rErr
 	}
 	return nil
+}
+
+func (s *UserServiceImpl) FindByEmail(ctx context.Context, email string) (LoginResponse, error) {
+	response, err := s.repo.FindByEmail(ctx, email)
+	if err != nil {
+		return LoginResponse{}, err
+	}
+	return response, nil
 }
