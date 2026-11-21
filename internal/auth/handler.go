@@ -50,15 +50,22 @@ func (h *UserHandlerImpl) Get(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *UserHandlerImpl) Create(w http.ResponseWriter, r *http.Request) {
-	request := User{}
+	request := UserRequest{}
 	if rerr := ReadBody(r, &request); rerr != nil {
 		WriteToJSON(w, http.StatusInternalServerError, "Internal Server Error", map[string]string{"error": string(rerr.Error())})
 		return
 	}
 
-	data := User{
-		Name: request.Name,
-		Role: request.Role,
+	hashed, hErr := HashPassword(request.Password)
+	if hErr != nil {
+		WriteToJSON(w, http.StatusInternalServerError, "Internal Server Error", map[string]string{"error": string(hErr.Error())})
+		return
+	}
+
+	data := UserRequest{
+		Name:     request.Name,
+		Email:    request.Email,
+		Password: hashed,
 	}
 	response, err := h.service.Create(r.Context(), data)
 	if err != nil {

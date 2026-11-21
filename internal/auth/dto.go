@@ -3,24 +3,34 @@ package auth
 import (
 	"encoding/json"
 	"net/http"
+
+	"golang.org/x/crypto/bcrypt"
 )
 
 type User struct {
-	Id   int
-	Name string
-	Role string
+	Id    int
+	Name  string
+	Email string
+	Role  string
 }
 
 type UserResponse struct {
-	Id   int    `json:"id"`
-	Name string `json:"name"`
-	Role string `json:"role"`
+	Id    int    `json:"id"`
+	Name  string `json:"name"`
+	Email string `json:"email"`
+	Role  string `json:"role"`
 }
 
 type WebResponse[T any] struct {
 	Code   int    `json:"code"`
 	Status string `json:"status"`
 	Data   T      `json:"data"`
+}
+
+type UserRequest struct {
+	Name     string `json:"name"`
+	Email    string `json:"email"`
+	Password string `json:"password"`
 }
 
 func ToResponses(u []User) []UserResponse {
@@ -34,9 +44,10 @@ func ToResponses(u []User) []UserResponse {
 
 func ToResponse(u User) UserResponse {
 	return UserResponse{
-		Id:   u.Id,
-		Name: u.Name,
-		Role: u.Role,
+		Id:    u.Id,
+		Name:  u.Name,
+		Email: u.Email,
+		Role:  u.Role,
 	}
 }
 
@@ -59,4 +70,12 @@ func ReadBody(r *http.Request, dst any) error {
 		return err
 	}
 	return nil
+}
+
+func HashPassword(password string) (string, error) {
+	hash, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
+	if err != nil {
+		return "could not hash password", err
+	}
+	return string(hash), nil
 }

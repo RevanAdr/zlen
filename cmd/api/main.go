@@ -31,7 +31,7 @@ func main() {
 	if len(key) < 32 {
 		log.Fatal("Jwt key too short or missing!")
 	}
-	jwt := []byte(key)
+	// jwt := []byte(key)
 	router := route.NewRouter()
 
 	server := &http.Server{
