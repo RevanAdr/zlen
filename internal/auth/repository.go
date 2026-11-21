@@ -11,7 +11,7 @@ import (
 type UserRepository interface {
 	List(ctx context.Context) ([]User, error)
 	Get(ctx context.Context, id int) (User, error)
-	Create(ctx context.Context, user UserRequest) (User, error)
+	Create(ctx context.Context, user UserRequest) (UserCreate, error)
 	Delete(ctx context.Context, id int) error
 }
 
@@ -33,7 +33,7 @@ func (r *UserRepositoryImpl) List(ctx context.Context) ([]User, error) {
 		return users, err
 	}
 
-	results, qErr := tx.Query(ctx, "SELECT * FROM users;")
+	results, qErr := tx.Query(ctx, "SELECT id, name, role FROM users;")
 
 	if qErr != nil {
 		return users, err
@@ -62,7 +62,7 @@ func (r *UserRepositoryImpl) Get(ctx context.Context, id int) (User, error) {
 		return result, err
 	}
 
-	qErr := tx.QueryRow(ctx, "SELECT * FROM users WHERE id = $1", id).Scan(&result.Id, &result.Name, &result.Role)
+	qErr := tx.QueryRow(ctx, "SELECT id, name, role FROM users WHERE id = $1", id).Scan(&result.Id, &result.Name, &result.Role)
 	if errors.Is(pgx.ErrNoRows, qErr) {
 		return result, ErrNotFound
 	}
@@ -78,14 +78,14 @@ func (r *UserRepositoryImpl) Get(ctx context.Context, id int) (User, error) {
 	return result, nil
 }
 
-func (r *UserRepositoryImpl) Create(ctx context.Context, user UserRequest) (User, error) {
+func (r *UserRepositoryImpl) Create(ctx context.Context, user UserRequest) (UserCreate, error) {
 	tx, err := r.Db.Begin(ctx)
-	result := User{}
+	result := UserCreate{}
 	if err != nil {
 		return result, err
 	}
 
-	qErr := tx.QueryRow(ctx, "INSERT INTO users (name, email, password) VALUES ($1, $2, $3) RETURNING id, name, role, email", user.Name, user.Email, user.Password).Scan(&result.Id, &result.Name, &result.Email, &result.Role)
+	qErr := tx.QueryRow(ctx, "INSERT INTO users (name, email, password) VALUES ($1, $2, $3) RETURNING id, name, role, email", user.Name, user.Email, user.Password).Scan(&result.Id, &result.Name, &result.Role, &result.Email)
 	if qErr != nil {
 		tx.Rollback(ctx)
 		return result, qErr

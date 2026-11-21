@@ -8,13 +8,25 @@ import (
 )
 
 type User struct {
+	Id   int
+	Name string
+	Role string
+}
+
+type UserResponse struct {
+	Id   int    `json:"id"`
+	Name string `json:"name"`
+	Role string `json:"role"`
+}
+
+type UserCreate struct {
 	Id    int
 	Name  string
 	Email string
 	Role  string
 }
 
-type UserResponse struct {
+type UserCreateResponse struct {
 	Id    int    `json:"id"`
 	Name  string `json:"name"`
 	Email string `json:"email"`
@@ -44,6 +56,14 @@ func ToResponses(u []User) []UserResponse {
 
 func ToResponse(u User) UserResponse {
 	return UserResponse{
+		Id:   u.Id,
+		Name: u.Name,
+		Role: u.Role,
+	}
+}
+
+func ToCreateRepsonse(u UserCreate) UserCreateResponse {
+	return UserCreateResponse{
 		Id:    u.Id,
 		Name:  u.Name,
 		Email: u.Email,

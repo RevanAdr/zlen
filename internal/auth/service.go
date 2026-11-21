@@ -5,7 +5,7 @@ import "context"
 type UserService interface {
 	List(ctx context.Context) ([]UserResponse, error)
 	Get(ctx context.Context, id int) (UserResponse, error)
-	Create(ctx context.Context, user UserRequest) (UserResponse, error)
+	Create(ctx context.Context, user UserRequest) (UserCreateResponse, error)
 	Delete(ctx context.Context, id int) error
 }
 
@@ -33,12 +33,12 @@ func (s *UserServiceImpl) Get(ctx context.Context, id int) (UserResponse, error)
 	return ToResponse(response), nil
 }
 
-func (s *UserServiceImpl) Create(ctx context.Context, user UserRequest) (UserResponse, error) {
+func (s *UserServiceImpl) Create(ctx context.Context, user UserRequest) (UserCreateResponse, error) {
 	response, err := s.repo.Create(ctx, user)
 	if err != nil {
-		return UserResponse{}, err
+		return UserCreateResponse{}, err
 	}
-	return ToResponse(response), nil
+	return ToCreateRepsonse(response), nil
 }
 
 func (s *UserServiceImpl) Delete(ctx context.Context, id int) error {
