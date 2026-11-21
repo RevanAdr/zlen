@@ -11,8 +11,6 @@ import (
 	"github.com/golang-jwt/jwt/v5"
 )
 
-var key []byte = []byte(os.Getenv("KEY"))
-
 type statusRecorder struct {
 	http.ResponseWriter
 	status int
@@ -39,7 +37,7 @@ func MakeToken(userId string, secret []byte) (string, error) {
 		Subject:   userId,
 		ExpiresAt: jwt.NewNumericDate(time.Now().Add(15 * time.Minute)),
 	}
-	token := jwt.NewWithClaims(jwt.SigningMethodES256, claims)
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
 	return token.SignedString(secret)
 }
 
