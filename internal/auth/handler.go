@@ -2,8 +2,11 @@ package auth
 
 import (
 	"errors"
+	"log/slog"
 	"net/http"
 	"strconv"
+
+	"github.com/RevanAdr/zlen/internal/httpx"
 )
 
 type UserHandler interface {
@@ -16,50 +19,51 @@ type UserHandler interface {
 
 type UserHandlerImpl struct {
 	service UserService
+	jwt     []byte
 }
 
-func NewUserHandler(service UserService) UserHandler {
-	return &UserHandlerImpl{service: service}
+func NewUserHandler(service UserService, token []byte) UserHandler {
+	return &UserHandlerImpl{service: service, jwt: token}
 }
 
 func (h *UserHandlerImpl) List(w http.ResponseWriter, r *http.Request) {
 	responses, err := h.service.List(r.Context())
 	if err != nil {
-		WriteToJSON(w, http.StatusInternalServerError, "Internal server error", map[string]string{"error": string(err.Error())})
+		httpx.WriteToJSON(w, http.StatusInternalServerError, "Internal server error", map[string]string{"error": string(err.Error())})
 		return
 	}
-	WriteToJSON(w, http.StatusOK, "OK", responses)
+	httpx.WriteToJSON(w, http.StatusOK, "OK", responses)
 }
 
 func (h *UserHandlerImpl) Get(w http.ResponseWriter, r *http.Request) {
 	id, cerr := strconv.Atoi(r.PathValue("id"))
 	if cerr != nil {
-		WriteToJSON(w, http.StatusBadRequest, "Bad Request", map[string]string{"error": string(cerr.Error())})
+		httpx.WriteToJSON(w, http.StatusBadRequest, "Bad Request", map[string]string{"error": string(cerr.Error())})
 		return
 	}
 	response, err := h.service.Get(r.Context(), id)
 	switch {
 	case errors.Is(ErrNotFound, err):
-		WriteToJSON(w, http.StatusNotFound, "Not Found", map[string]string{"error": string(err.Error())})
+		httpx.WriteToJSON(w, http.StatusNotFound, "Not Found", map[string]string{"error": string(err.Error())})
 		return
 	case err != nil:
-		WriteToJSON(w, http.StatusInternalServerError, "Internal Server Error", map[string]string{"error": "Internal Server Error"})
+		httpx.WriteToJSON(w, http.StatusInternalServerError, "Internal Server Error", map[string]string{"error": "Internal Server Error"})
 		return
 	default:
-		WriteToJSON(w, http.StatusOK, "OK", response)
+		httpx.WriteToJSON(w, http.StatusOK, "OK", response)
 	}
 }
 
 func (h *UserHandlerImpl) Create(w http.ResponseWriter, r *http.Request) {
 	request := UserRequest{}
-	if rerr := ReadBody(r, &request); rerr != nil {
-		WriteToJSON(w, http.StatusInternalServerError, "Internal Server Error", map[string]string{"error": string(rerr.Error())})
+	if rerr := httpx.ReadBody(r, &request); rerr != nil {
+		httpx.WriteToJSON(w, http.StatusInternalServerError, "Internal Server Error", map[string]string{"error": string(rerr.Error())})
 		return
 	}
 
 	hashed, hErr := HashPassword(request.Password)
 	if hErr != nil {
-		WriteToJSON(w, http.StatusInternalServerError, "Internal Server Error", map[string]string{"error": string(hErr.Error())})
+		httpx.WriteToJSON(w, http.StatusInternalServerError, "Internal Server Error", map[string]string{"error": string(hErr.Error())})
 		return
 	}
 
@@ -70,37 +74,37 @@ func (h *UserHandlerImpl) Create(w http.ResponseWriter, r *http.Request) {
 	}
 	response, err := h.service.Create(r.Context(), data)
 	if err != nil {
-		WriteToJSON(w, http.StatusInternalServerError, "Internal Server Error", map[string]string{"error": string(err.Error())})
+		httpx.WriteToJSON(w, http.StatusInternalServerError, "Internal Server Error", map[string]string{"error": string(err.Error())})
 		return
 	}
 
-	WriteToJSON(w, http.StatusCreated, "Created", response)
+	httpx.WriteToJSON(w, http.StatusCreated, "Created", response)
 }
 
 func (h *UserHandlerImpl) Delete(w http.ResponseWriter, r *http.Request) {
 	id, err := strconv.Atoi(r.PathValue("id"))
 	if err != nil {
-		WriteToJSON(w, http.StatusBadRequest, "Bad Request", map[string]string{"error": err.Error()})
+		httpx.WriteToJSON(w, http.StatusBadRequest, "Bad Request", map[string]string{"error": err.Error()})
 		return
 	}
 
 	rErr := h.service.Delete(r.Context(), id)
 	switch {
 	case errors.Is(rErr, ErrNotFound):
-		WriteToJSON(w, http.StatusNotFound, "Not Found", map[string]string{"error": "user not found"})
+		httpx.WriteToJSON(w, http.StatusNotFound, "Not Found", map[string]string{"error": "user not found"})
 		return
 	case rErr != nil:
-		WriteToJSON(w, http.StatusInternalServerError, "Internal Server Error", map[string]string{"error": rErr.Error()})
+		httpx.WriteToJSON(w, http.StatusInternalServerError, "Internal Server Error", map[string]string{"error": rErr.Error()})
 		return
 	default:
-		WriteToJSON(w, http.StatusOK, "OK", map[string]string{"messages": "Succed delete user"})
+		httpx.WriteToJSON(w, http.StatusOK, "OK", map[string]string{"messages": "Succed delete user"})
 	}
 }
 
 func (h *UserHandlerImpl) Login(w http.ResponseWriter, r *http.Request) {
 	request := LoginRequest{}
-	if rErr := ReadBody(r, &request); rErr != nil {
-		WriteToJSON(w, http.StatusBadRequest, "Bad Request", map[string]string{"error": string(rErr.Error())})
+	if rErr := httpx.ReadBody(r, &request); rErr != nil {
+		httpx.WriteToJSON(w, http.StatusBadRequest, "Bad Request", map[string]string{"error": string(rErr.Error())})
 		return
 	}
 
@@ -113,16 +117,25 @@ func (h *UserHandlerImpl) Login(w http.ResponseWriter, r *http.Request) {
 
 	switch {
 	case errors.Is(ErrNotFound, err):
-		WriteToJSON(w, http.StatusNotFound, "Not Found", map[string]string{"error": string(err.Error())})
+		httpx.WriteToJSON(w, http.StatusNotFound, "Not Found", map[string]string{"error": string(err.Error())})
 		return
 	case err != nil:
-		WriteToJSON(w, http.StatusInternalServerError, "Internal Server Error", map[string]string{"error": string(err.Error())})
+		httpx.WriteToJSON(w, http.StatusInternalServerError, "Internal Server Error", map[string]string{"error": string(err.Error())})
 		return
 	}
 
 	pwErr := MatchPassword(data.Password, response.Password)
 	if pwErr != nil {
-		WriteToJSON(w, http.StatusUnauthorized, "Unauthorized", map[string]string{"error": string(pwErr.Error())})
+		httpx.WriteToJSON(w, http.StatusUnauthorized, "Unauthorized", map[string]string{"error": string(pwErr.Error())})
+		return
+	}
+
+	formattedId := strconv.Itoa(response.ID)
+	token, tokenErr := httpx.MakeToken(formattedId, h.jwt)
+
+	if tokenErr != nil {
+		slog.Error("make token", "err", tokenErr)
+		httpx.WriteToJSON(w, http.StatusInternalServerError, "Internal Server Error", nil)
 		return
 	}
 
@@ -131,5 +144,14 @@ func (h *UserHandlerImpl) Login(w http.ResponseWriter, r *http.Request) {
 		Email: response.Email,
 	}
 
-	WriteToJSON(w, http.StatusOK, "OK", appear)
+	http.SetCookie(w, &http.Cookie{
+		Name:     "access_token",
+		Value:    token,
+		Path:     "/",
+		HttpOnly: true,
+		Secure:   false,
+		SameSite: http.SameSiteLaxMode,
+		MaxAge:   15 * 60,
+	})
+	httpx.WriteToJSON(w, http.StatusOK, "OK", appear)
 }

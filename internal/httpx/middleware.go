@@ -56,3 +56,28 @@ func Logging(next http.Handler) http.Handler {
 		)
 	})
 }
+
+func Authentication(key []byte) func(http.Handler) http.Handler {
+	return func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			cookie, err := r.Cookie("access_token")
+			if err != nil {
+				WriteToJSON(w, http.StatusUnauthorized, "Unauthorized", nil)
+				return
+			}
+
+			claims := &jwt.RegisteredClaims{}
+			_, tErr := jwt.ParseWithClaims(cookie.Value, claims, func(t *jwt.Token) (any, error) { return key, nil },
+				jwt.WithValidMethods([]string{"HS256"}),
+				jwt.WithExpirationRequired(),
+			)
+
+			if tErr != nil {
+				WriteToJSON(w, http.StatusUnauthorized, "Invalid Token", nil)
+				return
+			}
+
+			next.ServeHTTP(w, r)
+		})
+	}
+}

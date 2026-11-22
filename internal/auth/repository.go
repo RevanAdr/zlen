@@ -84,7 +84,7 @@ func (r *UserRepositoryImpl) Delete(ctx context.Context, id int) error {
 
 func (r *UserRepositoryImpl) FindByEmail(ctx context.Context, email string) (LoginResponse, error) {
 	result := LoginResponse{}
-	err := r.Db.QueryRow(ctx, "SELECT name, email, password FROM users WHERE email = $1", email).Scan(&result.Name, &result.Email, &result.Password)
+	err := r.Db.QueryRow(ctx, "SELECT id, name, email, password FROM users WHERE email = $1", email).Scan(&result.ID, &result.Name, &result.Email, &result.Password)
 
 	if errors.Is(err, pgx.ErrNoRows) {
 		return result, ErrNotFound

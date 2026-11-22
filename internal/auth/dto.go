@@ -1,9 +1,6 @@
 package auth
 
 import (
-	"encoding/json"
-	"net/http"
-
 	"golang.org/x/crypto/bcrypt"
 )
 
@@ -33,18 +30,13 @@ type UserCreateResponse struct {
 	Role  string `json:"role"`
 }
 
-type WebResponse[T any] struct {
-	Code   int    `json:"code"`
-	Status string `json:"status"`
-	Data   T      `json:"data"`
-}
-
 type LoginRequest struct {
 	Email    string `json:"email"`
 	Password string `json:"password"`
 }
 
 type LoginResponse struct {
+	ID       int
 	Name     string
 	Email    string
 	Password string
@@ -85,27 +77,6 @@ func ToCreateRepsonse(u UserCreate) UserCreateResponse {
 		Email: u.Email,
 		Role:  u.Role,
 	}
-}
-
-func WriteToJSON(w http.ResponseWriter, status int, str string, args any) {
-	encoder := json.NewEncoder(w)
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(status)
-	response := WebResponse[any]{
-		Code:   status,
-		Status: str,
-		Data:   args,
-	}
-	encoder.Encode(response)
-}
-
-func ReadBody(r *http.Request, dst any) error {
-	dec := json.NewDecoder(r.Body)
-	err := dec.Decode(dst)
-	if err != nil {
-		return err
-	}
-	return nil
 }
 
 func HashPassword(password string) (string, error) {

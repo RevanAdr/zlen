@@ -17,14 +17,6 @@ func main() {
 	logger := slog.New(slog.NewJSONHandler(os.Stdout, nil))
 	slog.SetDefault(logger)
 
-	db := config.NewConfig()
-	repo := auth.NewUserRepository(db)
-	service := auth.NewUserService(repo)
-	handler := auth.NewUserHandler(service)
-	route := auth.NewUseRoute(handler)
-
-	defer db.Close()
-
 	if env := godotenv.Load(".env"); env != nil {
 		panic(env)
 	}
@@ -33,7 +25,17 @@ func main() {
 	if len(key) < 32 {
 		log.Fatal("Jwt key too short or missing!")
 	}
-	// jwt := []byte(key)
+
+	jwt := []byte(key)
+
+	db := config.NewConfig()
+	repo := auth.NewUserRepository(db)
+	service := auth.NewUserService(repo)
+	handler := auth.NewUserHandler(service, jwt)
+	route := auth.NewUseRoute(handler, jwt)
+
+	defer db.Close()
+
 	router := route.NewRouter()
 
 	server := &http.Server{
