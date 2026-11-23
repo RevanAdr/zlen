@@ -8,23 +8,15 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
-type UserRepository interface {
-	List(ctx context.Context) ([]User, error)
-	Get(ctx context.Context, id int) (User, error)
-	Create(ctx context.Context, user UserRequest) (UserCreate, error)
-	Delete(ctx context.Context, id int) error
-	FindByEmail(ctx context.Context, email string) (LoginResponse, error)
-}
-
-type UserRepositoryImpl struct {
+type UserRepository struct {
 	Db *pgxpool.Pool
 }
 
-func NewUserRepository(db *pgxpool.Pool) UserRepository {
-	return &UserRepositoryImpl{Db: db}
+func NewUserRepository(db *pgxpool.Pool) *UserRepository {
+	return &UserRepository{Db: db}
 }
 
-func (r *UserRepositoryImpl) List(ctx context.Context) ([]User, error) {
+func (r *UserRepository) List(ctx context.Context) ([]User, error) {
 	results, err := r.Db.Query(ctx, "SELECT id, name, role FROM users;")
 	if err != nil {
 		return nil, err
@@ -45,7 +37,7 @@ func (r *UserRepositoryImpl) List(ctx context.Context) ([]User, error) {
 
 }
 
-func (r *UserRepositoryImpl) Get(ctx context.Context, id int) (User, error) {
+func (r *UserRepository) Get(ctx context.Context, id int) (User, error) {
 	var result User
 	err := r.Db.QueryRow(ctx, "SELECT id, name, role FROM users WHERE id = $1", id).Scan(&result.Id, &result.Name, &result.Role)
 	if errors.Is(err, pgx.ErrNoRows) {
@@ -54,7 +46,7 @@ func (r *UserRepositoryImpl) Get(ctx context.Context, id int) (User, error) {
 	return result, err
 }
 
-func (r *UserRepositoryImpl) Create(ctx context.Context, user UserRequest) (UserCreate, error) {
+func (r *UserRepository) Create(ctx context.Context, user UserRequest) (UserCreate, error) {
 	result := UserCreate{}
 	err := r.Db.QueryRow(ctx, "INSERT INTO users (name, email, password) VALUES ($1, $2, $3) RETURNING id, name, role, email", user.Name, user.Email, user.Password).Scan(&result.Id, &result.Name, &result.Role, &result.Email)
 	if err != nil {
@@ -63,7 +55,7 @@ func (r *UserRepositoryImpl) Create(ctx context.Context, user UserRequest) (User
 	return result, nil
 }
 
-func (r *UserRepositoryImpl) Delete(ctx context.Context, id int) error {
+func (r *UserRepository) Delete(ctx context.Context, id int) error {
 	tx, err := r.Db.Begin(ctx)
 	if err != nil {
 		return err
@@ -82,7 +74,7 @@ func (r *UserRepositoryImpl) Delete(ctx context.Context, id int) error {
 	return nil
 }
 
-func (r *UserRepositoryImpl) FindByEmail(ctx context.Context, email string) (LoginResponse, error) {
+func (r *UserRepository) FindByEmail(ctx context.Context, email string) (LoginResponse, error) {
 	result := LoginResponse{}
 	err := r.Db.QueryRow(ctx, "SELECT id, name, email, password FROM users WHERE email = $1", email).Scan(&result.ID, &result.Name, &result.Email, &result.Password)
 

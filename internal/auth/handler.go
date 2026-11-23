@@ -9,24 +9,16 @@ import (
 	"github.com/RevanAdr/zlen/internal/httpx"
 )
 
-type UserHandler interface {
-	List(w http.ResponseWriter, r *http.Request)
-	Get(w http.ResponseWriter, r *http.Request)
-	Create(w http.ResponseWriter, r *http.Request)
-	Delete(w http.ResponseWriter, r *http.Request)
-	Login(w http.ResponseWriter, r *http.Request)
-}
-
-type UserHandlerImpl struct {
-	service UserService
+type UserHandler struct {
+	service *UserService
 	jwt     []byte
 }
 
-func NewUserHandler(service UserService, token []byte) UserHandler {
-	return &UserHandlerImpl{service: service, jwt: token}
+func NewUserHandler(service *UserService, token []byte) *UserHandler {
+	return &UserHandler{service: service, jwt: token}
 }
 
-func (h *UserHandlerImpl) List(w http.ResponseWriter, r *http.Request) {
+func (h *UserHandler) List(w http.ResponseWriter, r *http.Request) {
 	responses, err := h.service.List(r.Context())
 	if err != nil {
 		httpx.WriteToJSON(w, http.StatusInternalServerError, "Internal server error", map[string]string{"error": string(err.Error())})
@@ -35,7 +27,7 @@ func (h *UserHandlerImpl) List(w http.ResponseWriter, r *http.Request) {
 	httpx.WriteToJSON(w, http.StatusOK, "OK", responses)
 }
 
-func (h *UserHandlerImpl) Get(w http.ResponseWriter, r *http.Request) {
+func (h *UserHandler) Get(w http.ResponseWriter, r *http.Request) {
 	id, cerr := strconv.Atoi(r.PathValue("id"))
 	if cerr != nil {
 		httpx.WriteToJSON(w, http.StatusBadRequest, "Bad Request", map[string]string{"error": string(cerr.Error())})
@@ -54,7 +46,7 @@ func (h *UserHandlerImpl) Get(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func (h *UserHandlerImpl) Create(w http.ResponseWriter, r *http.Request) {
+func (h *UserHandler) Create(w http.ResponseWriter, r *http.Request) {
 	request := UserRequest{}
 	if rerr := httpx.ReadBody(r, &request); rerr != nil {
 		httpx.WriteToJSON(w, http.StatusInternalServerError, "Internal Server Error", map[string]string{"error": string(rerr.Error())})
@@ -81,7 +73,7 @@ func (h *UserHandlerImpl) Create(w http.ResponseWriter, r *http.Request) {
 	httpx.WriteToJSON(w, http.StatusCreated, "Created", response)
 }
 
-func (h *UserHandlerImpl) Delete(w http.ResponseWriter, r *http.Request) {
+func (h *UserHandler) Delete(w http.ResponseWriter, r *http.Request) {
 	id, err := strconv.Atoi(r.PathValue("id"))
 	if err != nil {
 		httpx.WriteToJSON(w, http.StatusBadRequest, "Bad Request", map[string]string{"error": err.Error()})
@@ -101,7 +93,7 @@ func (h *UserHandlerImpl) Delete(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func (h *UserHandlerImpl) Login(w http.ResponseWriter, r *http.Request) {
+func (h *UserHandler) Login(w http.ResponseWriter, r *http.Request) {
 	request := LoginRequest{}
 	if rErr := httpx.ReadBody(r, &request); rErr != nil {
 		httpx.WriteToJSON(w, http.StatusBadRequest, "Bad Request", map[string]string{"error": string(rErr.Error())})

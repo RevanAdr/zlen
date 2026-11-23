@@ -6,30 +6,26 @@ import (
 	"github.com/RevanAdr/zlen/internal/httpx"
 )
 
-type UserRoute interface {
-	NewRouter() *http.ServeMux
-}
-
-type UserRouteImpl struct {
-	handler UserHandler
+type UserRoute struct {
+	handler *UserHandler
 	jwt     []byte
 }
 
-func NewUseRoute(handler UserHandler, jwt []byte) UserRoute {
-	return &UserRouteImpl{handler: handler, jwt: jwt}
+func NewUseRoute(handler *UserHandler, jwt []byte) *UserRoute {
+	return &UserRoute{handler: handler, jwt: jwt}
 }
 
-func (r *UserRouteImpl) NewRouter() *http.ServeMux {
+func (r *UserRoute) NewRouter() *http.ServeMux {
 	mux := http.NewServeMux()
 	auth := httpx.Authentication(r.jwt)
 
 	// authentication requeired
 	mux.Handle("GET /api/v1/employees", auth(http.HandlerFunc(r.handler.List)))
 	mux.Handle("GET /api/v1/employees/{id}", auth(http.HandlerFunc(r.handler.Get)))
-	mux.Handle("POST /api/v1/employees", auth(http.HandlerFunc(r.handler.Create)))
 	mux.Handle("DELETE /api/v1/employees/{id}", auth(http.HandlerFunc(r.handler.Delete)))
 
 	// public
+	mux.HandleFunc("POST /api/v1/employees", r.handler.Create)
 	mux.HandleFunc("POST /employees/login", r.handler.Login)
 
 	return mux
